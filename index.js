@@ -25,8 +25,6 @@ server.on('connection', function(socket) {
     console.log("Client: " + socket.remoteAddress+":"+socket.remotePort);
     connectedSockets.set(socket, undefined); //add user to cache
 
-    //socket.write('Hello, client. ');
-
     //user passes their position, every other user receives their position
     socket.on('data', function(chunk) {
         //store user position
@@ -38,9 +36,12 @@ server.on('connection', function(socket) {
 
     socket.on('end', function() {
         console.log('Closing connection with the client');
+	connectedSockets.delete(socket);
+	socket.end();
     });
 
     socket.on('error', function(err) {
         console.log(`${err}`);
+	socket.end();
     });
 });
