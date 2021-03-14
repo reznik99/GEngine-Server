@@ -4,8 +4,7 @@ const server = dgram.createSocket('udp4');
 const players: Map<String, Player> = new Map()
 
 server.on('message', (chunk, rinfo) => {
-    let data: string = chunk.toString()
-    let values: string[] = data.split("&")
+    let values: string[] = chunk.toString().split("&")
 
     if (values[0].startsWith("CONNECT")) {
         // Player connect
@@ -19,16 +18,18 @@ server.on('message', (chunk, rinfo) => {
 
     } else if (values[0].startsWith("UPDATE")) {
         // Player update
+        let player: Player = players.get(rinfo.address + ":" + rinfo.port)
+
+        let position: Vector3f = new Vector3f(Number(values[1]), Number(values[2]), Number(values[3]))
+        player.position = position
+        player.yaw = Number(values[4])
+
 
     } else if (values[0].startsWith("RTT_CHECK")) {
         // Player check RTT
         let time: string = new Date().getTime().toString();
         server.send(time, rinfo.port, rinfo.address);
     }
-
-    server.send(chunk.toString(), rinfo.port, rinfo.address, (err) => {
-        console.log(`server sent: ${chunk.toString()} to ${rinfo.address}:${rinfo.port}`);
-    });
 });
 
 server.on('listening', () => {
