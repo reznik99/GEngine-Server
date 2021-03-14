@@ -1,6 +1,6 @@
-import dgram from 'dgram';
-const server = dgram.createSocket('udp4');
-
+import dgram from 'dgram'
+const server = dgram.createSocket('udp4')
+const TICKRATE = 30
 const players: Map<String, Player> = new Map()
 
 server.on('message', (chunk, rinfo) => {
@@ -27,19 +27,39 @@ server.on('message', (chunk, rinfo) => {
 
     } else if (values[0].startsWith("RTT_CHECK")) {
         // Player check RTT
-        let time: string = new Date().getTime().toString();
-        server.send(time, rinfo.port, rinfo.address);
+        let time: string = new Date().getTime().toString()
+        server.send(time, rinfo.port, rinfo.address)
     }
-});
+})
 
 server.on('listening', () => {
-    const address = server.address();
-    console.log(`server listening ${address.address}:${address.port}`);
-});
+    const address = server.address()
+    console.log(`server listening ${address.address}:${address.port}`)
+})
 
 server.on('error', (err) => {
-    console.log(`server error:\n${err.stack}`);
-    server.close();
-});
+    console.log(`server error:\n${err.stack}`)
+    server.close()
+})
 
-server.bind(9998);
+server.bind(9998)
+setInterval(broadcastPlayerData, 1000 / TICKRATE)
+
+
+
+function broadcastPlayerData() {
+    players.forEach((player: Player, name: string) => {
+        broadcast(player)
+    })
+}
+
+// Send one player's info to all other players
+function broadcast(player: Player) {
+    let playerIP: string = player.address + ":" + player.port
+    players.forEach((player: Player, ip: string) => {
+        if (ip !== playerIP) {
+            let data: string = `${player.name} ${player.position.x}${player.position.y}${player.position.z}${player.yaw}`
+            server.send(data)
+        }
+    })
+}
