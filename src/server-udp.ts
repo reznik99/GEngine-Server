@@ -7,15 +7,15 @@ const TICKRATE = 30
 const players: Map<String, Player> = new Map()
 
 server.on('message', (chunk, rinfo) => {
-    console.log(chunk.toString())
+    // console.log(chunk.toString())
     let values: string[] = chunk.toString().split("&")
 
     if (values[0].startsWith("CONNECT")) {
         // Player connect
         console.info("Player joined")
 
-        if (values.length != 5) {
-            console.error("Invalid CONNECT")
+        if (values.length != 6) {
+            console.error(`Invalid CONNECT, params length ${values.length}`)
             return
         }
         let name: string = values[5]
@@ -28,14 +28,13 @@ server.on('message', (chunk, rinfo) => {
 
     } else if (values[0].startsWith("UPDATE")) {
         // Player update
-        console.info("Player update")
+        // console.info("Player update")
         let player: Player = players.get(rinfo.address + ":" + rinfo.port)
-        if (values.length != 4 || player == null) {
+        if (values.length != 5 || player == null) {
             console.error("Invalid UPDATE")
             return
         }
-        let position: Vector3f = new Vector3f(Number(values[1]), Number(values[2]), Number(values[3]))
-        player.position = position
+        player.position = new Vector3f(Number(values[1]), Number(values[2]), Number(values[3]))
         player.yaw = Number(values[4])
 
 
@@ -65,19 +64,18 @@ setInterval(broadcastPlayerData, 1000 / TICKRATE)
 
 
 function broadcastPlayerData() {
-    console.info(`Players online ${players.size}`)
+    // console.info(`Players online ${players.size}`)
     players.forEach((player: Player, name: string) => {
-        broadcast(player)
+        broadcast(player, name)
     })
 }
 
 // Send one player's info to all other players
-function broadcast(player: Player) {
-    let playerIP: string = player.address + ":" + player.port
+function broadcast(playerInfo: Player, name: string) {
     players.forEach((player: Player, ip: string) => {
-        if (ip !== playerIP) {
-            let data: string = `${player.name} ${player.position.x}${player.position.y}${player.position.z}${player.yaw}`
-            server.send(data)
+        if (ip !== name) {
+            let data: string = `${playerInfo.name}&${playerInfo.position.x}&${playerInfo.position.y}&${playerInfo.position.z}&${playerInfo.yaw}`
+            server.send(data, player.port, player.address)
         }
     })
 }
