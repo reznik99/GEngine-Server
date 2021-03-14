@@ -10,3 +10,5 @@ class Vector3f {
     y: number
     z: number
 }
+
+export default Vector3f

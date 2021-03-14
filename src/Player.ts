@@ -1,3 +1,4 @@
+import Vector3f from "./Vector3f"
 
 class Player {
 
@@ -23,3 +24,5 @@ class Player {
 
     port: number
 }
+
+export default Player
