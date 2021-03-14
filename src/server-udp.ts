@@ -41,8 +41,7 @@ server.on('message', (chunk, rinfo) => {
     } else if (values[0].startsWith("RTT_CHECK")) {
         // Player check RTT
         console.info("Player RTT Check")
-        let time: string = new Date().getTime().toString()
-        server.send(time, rinfo.port, rinfo.address)
+        server.send("RTT_CHECK", rinfo.port, rinfo.address)
     } else {
         console.error("Invalid formatted data recieved: " + chunk.toString())
     }
