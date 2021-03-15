@@ -3,11 +3,12 @@ import Vector3f from "./Vector3f"
 import Player from "./Player"
 
 const server = dgram.createSocket('udp4')
-const TICKRATE = 30
-const players: Map<String, Player> = new Map()
+
+const TICKRATE = 30                                 // Send player data every x Seconds
+const PLAYERKICKTIME = 5                            // Kick player after X Seconds 
+const players: Map<String, Player> = new Map()      // Players currently connected
 
 server.on('message', (chunk, rinfo) => {
-    // console.log(chunk.toString())
     let values: string[] = chunk.toString().split("&")
 
     if (values[0].startsWith("CONNECT")) {
@@ -22,13 +23,12 @@ server.on('message', (chunk, rinfo) => {
         let position: Vector3f = new Vector3f(Number(values[1]), Number(values[2]), Number(values[3]))
         let yaw: number = Number(values[4])
 
-        let newPlayer: Player = new Player(name, position, yaw, rinfo.address, rinfo.port)
+        let newPlayer: Player = new Player(name, position, yaw, rinfo.address, rinfo.port, Date.now())
 
         players.set(rinfo.address + ":" + rinfo.port, newPlayer)
 
     } else if (values[0].startsWith("UPDATE")) {
         // Player update
-        // console.info("Player update")
         let player: Player = players.get(rinfo.address + ":" + rinfo.port)
         if (values.length != 5 || player == null) {
             console.error("Invalid UPDATE")
@@ -36,7 +36,7 @@ server.on('message', (chunk, rinfo) => {
         }
         player.position = new Vector3f(Number(values[1]), Number(values[2]), Number(values[3]))
         player.yaw = Number(values[4])
-
+        player.lastSeen = Date.now()
 
     } else if (values[0].startsWith("RTT_CHECK")) {
         // Player check RTT
@@ -59,11 +59,19 @@ server.on('error', (err) => {
 
 server.bind(9998)
 
-setInterval(broadcastPlayerData, 1000 / TICKRATE)
+setInterval(broadcastPlayerData, 1000 / TICKRATE)   // Tick
 
+setInterval(cleanPlayers, PLAYERKICKTIME * 1000)    // Disconnect players
+
+
+function cleanPlayers() {
+    players.forEach((player: Player, ip: string) => {
+        if (Date.now() - player.lastSeen > PLAYERKICKTIME * 1000)
+            players.delete(ip);
+    })
+}
 
 function broadcastPlayerData() {
-    // console.info(`Players online ${players.size}`)
     players.forEach((player: Player, name: string) => {
         broadcast(player, name)
     })
@@ -73,7 +81,7 @@ function broadcastPlayerData() {
 function broadcast(playerInfo: Player, name: string) {
     players.forEach((player: Player, ip: string) => {
         if (ip !== name) {
-            let data: string = `${playerInfo.name}&${playerInfo.position.x}&${playerInfo.position.y}&${playerInfo.position.z}&${playerInfo.yaw}`
+            let data: string = playerInfo.serialize()
             server.send(data, player.port, player.address)
         }
     })
