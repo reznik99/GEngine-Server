@@ -5,7 +5,7 @@ import Player from "./Player"
 const server = dgram.createSocket('udp4')
 
 const TICKRATE = 30                                 // Send player data every x Seconds
-const PLAYERKICKTIME = 5                            // Kick player after X Seconds 
+const PLAYERKICKTIME = 25                           // Kick player after X Seconds 
 const players: Map<String, Player> = new Map()      // Players currently connected
 
 server.on('message', (chunk, rinfo) => {
@@ -66,8 +66,10 @@ setInterval(cleanPlayers, PLAYERKICKTIME * 1000)    // Disconnect players
 
 function cleanPlayers() {
     players.forEach((player: Player, ip: string) => {
-        if (Date.now() - player.lastSeen > PLAYERKICKTIME * 1000)
+        if (Date.now() - player.lastSeen > PLAYERKICKTIME * 1000) {
+            console.log(`Player ${player.name} timed out`);
             players.delete(ip);
+        }
     })
 }
 
